@@ -7,10 +7,10 @@ import (
 )
 
 type EmailConfig struct {
-	FromAddr string
-	ToAddr   string
-	Password string //https://support.google.com/mail/answer/185833?hl=en
-	SmtpHost string
+	FromAddr string `json:"fromaddr"`
+	ToAddr   string `json:"toaddr"`
+	Password string `json:"password"` //https://support.google.com/mail/answer/185833?hl=en
+	SmtpHost string `json:"smtphost"`
 }
 
 // SendEmail sends an email using the provided email configuration and message

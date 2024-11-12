@@ -8,9 +8,9 @@ import (
 )
 
 type BlackListMonitor struct {
-	ApiUrl     string
-	Token      string
-	DomainName string
+	ApiUrl     string `json:"apiUrl"`
+	Token      string `json:"token"`
+	DomainName string `json:"domainName"`
 }
 
 type MxtoolboxResponse struct {

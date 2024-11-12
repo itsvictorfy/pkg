@@ -9,13 +9,29 @@ import (
 )
 
 type Github struct {
-	Client     *github.Client
-	Token      string
-	OrgName    string
-	ActionId   int64
-	Repo       string
-	ActionFile string
+	Client     *github.Client `json:"-"` // Exclude from JSON
+	Token      string         `json:"token"`
+	OrgName    string         `json:"orgName"`
+	ActionId   int64          `json:"actionId"`
+	Repo       string         `json:"repo"`
+	ActionFile string         `json:"actionFile"`
 }
+
+type Workflow struct {
+	Name string `json:"name"`
+	ID   int64  `json:"id"`
+}
+
+var (
+	WorkflowCIBuildDeploy          = Workflow{Name: "CI-Build-Deploy", ID: 119110820}
+	WorkflowCIManualSingleService  = Workflow{Name: "CI-Manual-SingleService", ID: 119110821}
+	WorkflowCIOnCommitTests        = Workflow{Name: "CI-OnCommit-Tests", ID: 119110822}
+	WorkflowCIBuildDeployHtmlToPdf = Workflow{Name: "CI-Build-Deploy-HtmlToPdf", ID: 119110823}
+	WorkflowMaintenance            = Workflow{Name: "maintenance", ID: 119116978}
+	WorkflowCIDeploy               = Workflow{Name: "CI-Deploy", ID: 125946370}
+	WorkflowTestWorkflow           = Workflow{Name: "test-workflow", ID: 126133680}
+	WorkflowCDDeployEnvironment    = Workflow{Name: "CD-Deploy-Environment", ID: 126723957}
+)
 
 func (gh *Github) CreateGithubClient() error {
 	if gh.Token == "" {
@@ -50,14 +66,14 @@ func (gh *Github) TriggerWorkflowActionByFileName(req github.CreateWorkflowDispa
 	return nil
 }
 
-func (gh *Github) ListWorkflows() error {
+func (gh *Github) ListAllWorkflows() ([]*github.Workflow, error) {
 	ctx := context.Background()
 	wf, _, err := gh.Client.Actions.ListWorkflows(ctx, gh.OrgName, gh.Repo, nil)
 	if err != nil {
-		return fmt.Errorf("github: unable to list workflows: %v", err)
+		return []*github.Workflow{}, fmt.Errorf("github: unable to list workflows: %v", err)
 	}
 	for _, workflow := range wf.Workflows {
-		fmt.Printf("Workflow Name: %v\n Workflow ID: %v, WorkFlowFile: %v", workflow.GetName(), workflow.GetID(), workflow.Path)
+		fmt.Printf("Workflow Name: %v\n Workflow ID: %v\n", workflow.GetName(), workflow.GetID())
 	}
-	return nil
+	return wf.Workflows, nil
 }

@@ -9,8 +9,8 @@ import (
 )
 
 type ArgoConnection struct {
-	Address string
-	Token   string
+	Address string `json:"address"`
+	Token   string `json:"token"`
 }
 
 // import (

@@ -65,13 +65,14 @@ func TestGithubAuth(t *testing.T) {
 
 func TestGithubListWorkflows(t *testing.T) {
 	gh := &Github{
-		OrgName:    "",
-		Repo:       "",
+		OrgName:    "50k-trade",
+		Repo:       "server",
 		ActionId:   123456, // Replace with a valid workflow ID
 		ActionFile: "CD-Deploy-Env.yaml",
 		Token:      "",
 	}
 	gh.CreateGithubClient()
-	err := gh.ListWorkflows()
+	wf, err := gh.ListAllWorkflows()
+	assert.NotNil(t, wf, "Expected a non-nil list of workflows")
 	assert.NoError(t, err, "Expected no error when listing workflows")
 }
