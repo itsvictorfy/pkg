@@ -1,63 +1,61 @@
 package github
 
 import (
+	"os"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
 	"github.com/stretchr/testify/assert"
 )
 
 // Test function for CreateGithubClient and TriggerWorkflowActionByID
 func TestTriggerWorkflowActionByID_Integration(t *testing.T) {
 	gh := &Github{
-		OrgName:    "",
-		Repo:       "",
-		ActionId:   1, // Replace with a valid workflow ID
-		ActionFile: "CD-Deploy-Env.yaml",
+		OrgName: os.Getenv("GITHUB_ORG_NAME"),
+		Repo:    os.Getenv("GITHUB_REPO"),
+		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
 	gh.CreateGithubClient()
-
-	// Define request
-	req := github.CreateWorkflowDispatchEventRequest{
-		Ref: "main",
+	wf := Workflow{
+		ID:  123456789,
+		Ref: "master",
 		Inputs: map[string]interface{}{
-			"environment": "staging",
+			"environment": "Staging",
 			"image_tag":   "1",
-		}}
-
+		},
+		ActionFile: "workflow.yml",
+	}
 	// Attempt to trigger workflow
-	err := gh.TriggerWorkflowActionByID(req)
+	err := gh.TriggerWorkflowActionByID(wf)
 	assert.NoError(t, err, "Expected no error when triggering workflow action")
 }
 func TestTriggerWorkflowActionByFileName_Integration(t *testing.T) {
 	gh := &Github{
-		OrgName:    "",
-		Repo:       "",
-		ActionId:   123456, // Replace with a valid workflow ID
-		ActionFile: "CD-Deploy-Env.yaml",
-		Token:      "",
+		OrgName: os.Getenv("GITHUB_ORG_NAME"),
+		Repo:    os.Getenv("GITHUB_REPO"),
+		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
 	gh.CreateGithubClient()
 
-	// Define request
-	req := github.CreateWorkflowDispatchEventRequest{
-		Ref: "main",
+	// Define workflow
+	wf := Workflow{
+		ID:  123456789,
+		Ref: "master",
 		Inputs: map[string]interface{}{
-			"environment": "staging",
+			"environment": "Staging",
 			"image_tag":   "1",
-		}}
+		},
+		ActionFile: "workflow.yml",
+	}
 
 	// Attempt to trigger workflow
-	err := gh.TriggerWorkflowActionByFileName(req)
+	err := gh.TriggerWorkflowActionByFileName(wf)
 	assert.NoError(t, err, "Expected no error when triggering workflow action by filename")
 }
 func TestGithubAuth(t *testing.T) {
 	gh := &Github{
-		OrgName:    "",
-		Repo:       "",
-		ActionId:   123456, // Replace with a valid workflow ID
-		ActionFile: "CD-Deploy-Env.yaml",
-		Token:      "",
+		OrgName: os.Getenv("GITHUB_ORG_NAME"),
+		Repo:    os.Getenv("GITHUB_REPO"),
+		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
 	gh.CreateGithubClient()
 	assert.NotNil(t, gh.Client, "Expected a non-nil Github client")
@@ -65,11 +63,9 @@ func TestGithubAuth(t *testing.T) {
 
 func TestGithubListWorkflows(t *testing.T) {
 	gh := &Github{
-		OrgName:    "50k-trade",
-		Repo:       "server",
-		ActionId:   123456, // Replace with a valid workflow ID
-		ActionFile: "CD-Deploy-Env.yaml",
-		Token:      "",
+		OrgName: os.Getenv("GITHUB_ORG_NAME"),
+		Repo:    os.Getenv("GITHUB_REPO"),
+		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
 	gh.CreateGithubClient()
 	wf, err := gh.ListAllWorkflows()

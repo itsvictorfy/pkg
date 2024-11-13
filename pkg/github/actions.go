@@ -9,29 +9,19 @@ import (
 )
 
 type Github struct {
-	Client     *github.Client `json:"-"` // Exclude from JSON
-	Token      string         `json:"token"`
-	OrgName    string         `json:"orgName"`
-	ActionId   int64          `json:"actionId"`
-	Repo       string         `json:"repo"`
-	ActionFile string         `json:"actionFile"`
+	Client  *github.Client `json:"-"` // Exclude from JSON
+	Token   string         `json:"token"`
+	OrgName string         `json:"orgName"`
+	Repo    string         `json:"repo"`
 }
 
 type Workflow struct {
-	Name string `json:"name"`
-	ID   int64  `json:"id"`
+	Name       string                 `json:"name"`
+	ID         int64                  `json:"id"`
+	ActionFile string                 `json:"actionFile"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	Ref        string                 `json:"ref"`
 }
-
-var (
-	WorkflowCIBuildDeploy          = Workflow{Name: "CI-Build-Deploy", ID: 119110820}
-	WorkflowCIManualSingleService  = Workflow{Name: "CI-Manual-SingleService", ID: 119110821}
-	WorkflowCIOnCommitTests        = Workflow{Name: "CI-OnCommit-Tests", ID: 119110822}
-	WorkflowCIBuildDeployHtmlToPdf = Workflow{Name: "CI-Build-Deploy-HtmlToPdf", ID: 119110823}
-	WorkflowMaintenance            = Workflow{Name: "maintenance", ID: 119116978}
-	WorkflowCIDeploy               = Workflow{Name: "CI-Deploy", ID: 125946370}
-	WorkflowTestWorkflow           = Workflow{Name: "test-workflow", ID: 126133680}
-	WorkflowCDDeployEnvironment    = Workflow{Name: "CD-Deploy-Environment", ID: 126723957}
-)
 
 func (gh *Github) CreateGithubClient() error {
 	if gh.Token == "" {
@@ -47,18 +37,27 @@ func (gh *Github) CreateGithubClient() error {
 
 }
 
-func (gh *Github) TriggerWorkflowActionByID(req github.CreateWorkflowDispatchEventRequest) error {
+func (gh *Github) TriggerWorkflowActionByID(wf Workflow) error {
 	ctx := context.Background()
-	_, err := gh.Client.Actions.CreateWorkflowDispatchEventByID(ctx, gh.OrgName, gh.Repo, gh.ActionId, req)
+	req := github.CreateWorkflowDispatchEventRequest{
+		Ref:    wf.Ref,
+		Inputs: wf.Inputs,
+	}
+
+	_, err := gh.Client.Actions.CreateWorkflowDispatchEventByID(ctx, gh.OrgName, gh.Repo, wf.ID, req)
 	if err != nil {
 		return fmt.Errorf("github: unable to trigger workflow action: %v", err)
 	}
 	return nil
 }
 
-func (gh *Github) TriggerWorkflowActionByFileName(req github.CreateWorkflowDispatchEventRequest) error {
+func (gh *Github) TriggerWorkflowActionByFileName(wf Workflow) error {
 	ctx := context.Background()
-	data, err := gh.Client.Actions.CreateWorkflowDispatchEventByFileName(ctx, gh.OrgName, gh.Repo, gh.ActionFile, req)
+	req := github.CreateWorkflowDispatchEventRequest{
+		Ref:    wf.Ref,
+		Inputs: wf.Inputs,
+	}
+	data, err := gh.Client.Actions.CreateWorkflowDispatchEventByFileName(ctx, gh.OrgName, gh.Repo, wf.ActionFile, req)
 	if err != nil {
 		return fmt.Errorf("github: unable to trigger workflow action: %v", err)
 	}
