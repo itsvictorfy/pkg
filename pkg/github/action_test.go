@@ -14,7 +14,7 @@ func TestTriggerWorkflowActionByID_Integration(t *testing.T) {
 		Repo:    os.Getenv("GITHUB_REPO"),
 		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
-	gh.CreateGithubClient()
+	gh.InitGithubClient()
 	wf := Workflow{
 		ID:  123456789,
 		Ref: "master",
@@ -34,7 +34,7 @@ func TestTriggerWorkflowActionByFileName_Integration(t *testing.T) {
 		Repo:    os.Getenv("GITHUB_REPO"),
 		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
-	gh.CreateGithubClient()
+	gh.InitGithubClient()
 
 	// Define workflow
 	wf := Workflow{
@@ -51,23 +51,23 @@ func TestTriggerWorkflowActionByFileName_Integration(t *testing.T) {
 	err := gh.TriggerWorkflowActionByFileName(wf)
 	assert.NoError(t, err, "Expected no error when triggering workflow action by filename")
 }
-func TestGithubAuth(t *testing.T) {
+func TestGithubAuth_Integration(t *testing.T) {
 	gh := &Github{
 		OrgName: os.Getenv("GITHUB_ORG_NAME"),
 		Repo:    os.Getenv("GITHUB_REPO"),
 		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
-	gh.CreateGithubClient()
+	gh.InitGithubClient()
 	assert.NotNil(t, gh.Client, "Expected a non-nil Github client")
 }
 
-func TestGithubListWorkflows(t *testing.T) {
+func TestGithubListWorkflows_Integration(t *testing.T) {
 	gh := &Github{
 		OrgName: os.Getenv("GITHUB_ORG_NAME"),
 		Repo:    os.Getenv("GITHUB_REPO"),
 		Token:   os.Getenv("GITHUB_TOKEN"),
 	}
-	gh.CreateGithubClient()
+	gh.InitGithubClient()
 	wf, err := gh.ListAllWorkflows()
 	assert.NotNil(t, wf, "Expected a non-nil list of workflows")
 	assert.NoError(t, err, "Expected no error when listing workflows")

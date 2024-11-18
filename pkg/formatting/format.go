@@ -5,9 +5,8 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"testing"
 
-	"github.com/go-playground/assert/v2"
+	"github.com/gin-gonic/gin"
 )
 
 // StructToString converts a struct to a string representation
@@ -29,7 +28,18 @@ func StructToString(v interface{}) string {
 
 // MapToString converts a map to a string representation
 func MapToString(m map[string]interface{}) string {
+	return mapToStringWithIndent(m, 0)
+}
+
+func mapToStringWithIndent(m map[string]interface{}, indentLevel int) string {
 	var builder strings.Builder
+
+	// Helper function to add indentation
+	addIndent := func(level int) {
+		for i := 0; i < level; i++ {
+			builder.WriteString("  ")
+		}
+	}
 
 	// Collect and sort the map keys
 	keys := make([]string, 0, len(m))
@@ -42,92 +52,67 @@ func MapToString(m map[string]interface{}) string {
 	for _, key := range keys {
 		value := m[key]
 
-		// Add key and process value with appropriate formatting
-		builder.WriteString(fmt.Sprintf("%s: %v\n", key, formatValue(value)))
+		// Add key with indentation
+		addIndent(indentLevel)
+		builder.WriteString(fmt.Sprintf("%s:", key))
+
+		// Process the value with appropriate formatting
+		if subMap, ok := value.(map[string]interface{}); ok {
+			builder.WriteString("\n")
+			builder.WriteString(mapToStringWithIndent(subMap, indentLevel+1))
+		} else if arr, ok := value.([]interface{}); ok {
+			builder.WriteString(" [\n")
+			for _, item := range arr {
+				addIndent(indentLevel + 1)
+				formatValue(item, &builder, indentLevel+1)
+				builder.WriteString("\n")
+			}
+			addIndent(indentLevel)
+			builder.WriteString("]")
+		} else {
+			builder.WriteString(" ")
+			formatValue(value, &builder, indentLevel)
+		}
+		builder.WriteString("\n")
 	}
 
 	return builder.String()
 }
 
-// formatValue formats the value based on its type
-func formatValue(value interface{}) string {
+func formatValue(value interface{}, builder *strings.Builder, indentLevel int) {
 	switch v := value.(type) {
 	case map[string]interface{}:
-		// If the value is a nested map, format it with indentation
-		var builder strings.Builder
 		builder.WriteString("\n")
-		for key, nestedValue := range v {
-			builder.WriteString(fmt.Sprintf("  %s: %v\n", key, formatValue(nestedValue)))
-		}
-		return builder.String()
+		builder.WriteString(mapToStringWithIndent(v, indentLevel+1))
 	case []interface{}:
-		// Handle arrays/lists
-		var builder strings.Builder
 		builder.WriteString("[\n")
 		for _, item := range v {
-			builder.WriteString(fmt.Sprintf("  %v\n", formatValue(item)))
+			addIndent(indentLevel + 1)
+			formatValue(item, builder, indentLevel+1)
+			builder.WriteString("\n")
 		}
+		addIndent(indentLevel)
 		builder.WriteString("]")
-		return builder.String()
 	default:
-		// For basic types, return the string representation
-		return fmt.Sprintf("%v", v)
+		builder.WriteString(fmt.Sprintf("%v", v))
 	}
 }
-func TestMapToString(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    map[string]interface{}
-		expected string
-	}{
-		{
-			name:     "Simple key-value pairs",
-			input:    map[string]interface{}{"a": 1, "b": "string", "c": true},
-			expected: "a: 1\nb: string\nc: true\n",
-		},
-		{
-			name: "Nested map",
-			input: map[string]interface{}{
-				"parent": map[string]interface{}{
-					"child1": "value1",
-					"child2": 2,
-				},
-				"anotherKey": "anotherValue",
-			},
-			expected: "anotherKey: anotherValue\nparent:\n  child1: value1\n  child2: 2\n",
-		},
-		{
-			name: "Array in map",
-			input: map[string]interface{}{
-				"list": []interface{}{"item1", 2, true},
-			},
-			expected: "list: [\n  item1\n  2\n  true\n]\n",
-		},
-		{
-			name:     "Empty map",
-			input:    map[string]interface{}{},
-			expected: "",
-		},
-		{
-			name: "Mixed nested structures",
-			input: map[string]interface{}{
-				"level1": map[string]interface{}{
-					"level2": []interface{}{
-						map[string]interface{}{
-							"key1": "value1",
-							"key2": 3,
-						},
-					},
-				},
-			},
-			expected: "level1:\n  level2: [\n    key1: value1\n    key2: 3\n  ]\n",
-		},
+func addIndent(level int) string {
+	var builder strings.Builder
+	for i := 0; i < level; i++ {
+		builder.WriteString("  ")
+	}
+	return builder.String()
+}
+func queryToMap(c *gin.Context) map[string]interface{} {
+	params := make(map[string]interface{})
+
+	// Get all query parameters from the request
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			params[key] = values[0] // Use the first value if there are multiple values for a key
+		}
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := MapToString(test.input)
-			assert.Equal(t, test.expected, actual)
-		})
-	}
+	return params
 }

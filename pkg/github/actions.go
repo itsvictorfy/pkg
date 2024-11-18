@@ -23,7 +23,7 @@ type Workflow struct {
 	Ref        string                 `json:"ref"`
 }
 
-func (gh *Github) CreateGithubClient() error {
+func (gh *Github) InitGithubClient() error {
 	if gh.Token == "" {
 		log.Fatal("github: token is required")
 	}
