@@ -1,4 +1,4 @@
-module github.com/itsvictorfy/itsvictorfy
+module github.com/itsvictorfy/pkg
 
 go 1.23.2
 
