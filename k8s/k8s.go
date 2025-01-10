@@ -212,3 +212,18 @@ func (kube *KubeClient) CreateConfigMap(name, namespace string, data map[string]
 	}
 	return nil
 }
+
+func (kube *KubeClient) IsJobCompleted(jobName, namespace string) (bool, error) {
+	job, err := kube.BatchV1().Jobs(namespace).Get(context.TODO(), jobName, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("kube: unable to retrieve job %v", err)
+	}
+	if job.Status.Succeeded > 0 {
+		return true, nil
+	}
+
+	if job.Status.Failed > 0 {
+		return false, fmt.Errorf("job failed")
+	}
+	return false, nil
+}
