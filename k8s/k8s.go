@@ -76,7 +76,7 @@ func (kube *KubeClient) TriggerJobFromCronJob(cronjobName, namespace string) (st
 	}
 	return jobName, nil
 }
-func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string) error {
+func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string, volumeName, pvcName, mountPath string) error {
 	var env []corev1.EnvVar
 	for key, value := range envVars {
 		env = append(env, corev1.EnvVar{
@@ -84,6 +84,23 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 			Value: value,
 		})
 	}
+
+	// Define the volume and volume mount
+	volume := corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: pvcName,
+			},
+		},
+	}
+
+	volumeMount := corev1.VolumeMount{
+		Name:      volumeName,
+		MountPath: mountPath,
+	}
+
+	// Define the Job
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   jobName,
@@ -94,21 +111,26 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:    jobName,
-							Image:   image,
-							Command: commands,
-							Env:     env,
+							Name:         jobName,
+							Image:        image,
+							Command:      commands,
+							Env:          env,
+							VolumeMounts: []corev1.VolumeMount{volumeMount},
 						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
+					Volumes:       []corev1.Volume{volume},
 				},
 			},
 		},
 	}
+
+	// Create the Job in the specified namespace
 	_, err := kube.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to create job %v", err)
 	}
+
 	return nil
 }
 
