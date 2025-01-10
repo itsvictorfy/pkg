@@ -76,7 +76,7 @@ func (kube *KubeClient) TriggerJobFromCronJob(cronjobName, namespace string) (st
 	}
 	return jobName, nil
 }
-func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string, volumeName, pvcName, mountPath string) error {
+func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string, volumeNameP, mountPathP *string) error {
 	var env []corev1.EnvVar
 	for key, value := range envVars {
 		env = append(env, corev1.EnvVar{
@@ -85,19 +85,25 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 		})
 	}
 
-	// Define the volume and volume mount
-	volume := corev1.Volume{
-		Name: volumeName,
-		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: pvcName,
+	var volumes []corev1.Volume
+	var volumeMounts []corev1.VolumeMount
+	if volumeNameP != nil && mountPathP != nil {
+		volume := corev1.Volume{
+			Name: *volumeNameP,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: *volumeNameP,
+				},
 			},
-		},
-	}
+		}
 
-	volumeMount := corev1.VolumeMount{
-		Name:      volumeName,
-		MountPath: mountPath,
+		volumeMount := corev1.VolumeMount{
+			Name:      *volumeNameP,
+			MountPath: *mountPathP,
+		}
+
+		volumes = append(volumes, volume)
+		volumeMounts = append(volumeMounts, volumeMount)
 	}
 
 	// Define the Job
@@ -115,11 +121,11 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 							Image:        image,
 							Command:      commands,
 							Env:          env,
-							VolumeMounts: []corev1.VolumeMount{volumeMount},
+							VolumeMounts: volumeMounts, // Add only if volumeMounts are defined
 						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
-					Volumes:       []corev1.Volume{volume},
+					Volumes:       volumes, // Add only if volumes are defined
 				},
 			},
 		},
