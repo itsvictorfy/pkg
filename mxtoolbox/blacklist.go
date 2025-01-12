@@ -83,7 +83,6 @@ func (bl BlackListMonitor) IsDomainBlacklisted() (bool, error) {
 		return false, fmt.Errorf("error creating request: %s", err)
 	}
 	req.Header.Set("Authorization", bl.Token)
-	slog.Info("Sending Request to mxtoolbox")
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, fmt.Errorf("error sending request: %s", err)
@@ -98,7 +97,5 @@ func (bl BlackListMonitor) IsDomainBlacklisted() (bool, error) {
 	if data.StatusSummary != "Not Blacklisted" {
 		return true, fmt.Errorf("domain %s is BlackListed", bl.DomainName)
 	}
-	slog.Info("Domain Check completed", slog.String("DomainName", bl.DomainName))
 	return false, nil
-
 }

@@ -23,3 +23,6 @@ go.work.sum
 
 # env file
 .env
+#integration Test
+./github/action_test.go
+github/action_test.go
