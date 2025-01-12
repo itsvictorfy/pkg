@@ -29,50 +29,50 @@ type Gcp struct {
 	ProjectID             string                  `json:"projectId"`
 }
 
-// InitGcp initializes the GCP client
-func (gcp *Gcp) InitGcp() error { //V
-	slog.Info("GCP: init client", slog.String("Env", gcp.Env))
+// Initc initializes the c client
+func (c *Gcp) InitGcp() error { //V
+	slog.Info("GCP: init client", slog.String("Env", c.Env))
 	credentials := "config/sa.json"
 	gcpContext := context.Background()
 
 	var err error
-	gcp.IamService, err = iam.NewService(gcpContext, option.WithCredentialsFile(credentials))
+	c.IamService, err = iam.NewService(gcpContext, option.WithCredentialsFile(credentials))
 	if err != nil {
 		return fmt.Errorf("gcp: unable to create iam service client: %v", err)
 	}
-	gcp.SecretManagerService, err = secretmanager.NewClient(gcpContext, option.WithCredentialsFile(credentials))
+	c.SecretManagerService, err = secretmanager.NewClient(gcpContext, option.WithCredentialsFile(credentials))
 	if err != nil {
 		return fmt.Errorf("gcp: unable to create secretManager service client: %v", err)
 	}
-	gcp.SqlService, err = sqladmin.NewService(gcpContext, option.WithCredentialsFile(credentials))
+	c.SqlService, err = sqladmin.NewService(gcpContext, option.WithCredentialsFile(credentials))
 	if err != nil {
 		return fmt.Errorf("gcp: unable to create sql service client: %v", err)
 	}
-	gcp.storageTransferClient, err = storagetransfer.NewClient(context.Background(), option.WithCredentialsFile(credentials))
+	c.storageTransferClient, err = storagetransfer.NewClient(context.Background(), option.WithCredentialsFile(credentials))
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
-	gcp.CloudRunService, err = cloudrun.NewService(gcpContext, option.WithCredentialsFile(credentials))
+	c.CloudRunService, err = cloudrun.NewService(gcpContext, option.WithCredentialsFile(credentials))
 	if err != nil {
 		return fmt.Errorf("gcp: unable to create cloudrun service client: %v", err)
 	}
-	gcp.StorageService, err = storage.NewClient(gcpContext, option.WithCredentialsFile(credentials))
+	c.StorageService, err = storage.NewClient(gcpContext, option.WithCredentialsFile(credentials))
 	if err != nil {
 		return fmt.Errorf("gcp: unable to create storage service client: %v", err)
 	}
-	slog.Info("GCP: client initialized", slog.String("Project", gcp.ProjectID), slog.String("Env", gcp.Env))
+	slog.Info("GCP: client initialized", slog.String("Project", c.ProjectID), slog.String("Env", c.Env))
 	return nil
 }
 
-// Triggers GCP Transfer Job
-func (gcp *Gcp) TriggerTransferJob(projectID, transferJobName string) error {
+// Triggers c Transfer Job
+func (c *Gcp) TriggerTransferJob(projectID, transferJobName string) error {
 	ctx := context.Background()
 	req := &storagetransferpb.RunTransferJobRequest{
 		JobName:   transferJobName,
 		ProjectId: projectID,
 	}
 
-	_, err := gcp.storageTransferClient.RunTransferJob(ctx, req)
+	_, err := c.storageTransferClient.RunTransferJob(ctx, req)
 	if err != nil {
 		return fmt.Errorf("client.RunTransferJob: %v", err)
 	}
@@ -81,9 +81,9 @@ func (gcp *Gcp) TriggerTransferJob(projectID, transferJobName string) error {
 	return nil
 }
 
-func (gcp *Gcp) DeployCloudRunApp(serviceName, imageURL, region string) (string, string, error) {
+func (c *Gcp) DeployCloudRunApp(serviceName, imageURL, region string) (string, string, error) {
 	// Define the parent location in Cloud Run
-	parent := fmt.Sprintf("projects/%s/locations/%s", gcp.ProjectID, region)
+	parent := fmt.Sprintf("projects/%s/locations/%s", c.ProjectID, region)
 
 	// Define the Cloud Run service specification
 	service := &cloudrun.Service{
@@ -111,7 +111,7 @@ func (gcp *Gcp) DeployCloudRunApp(serviceName, imageURL, region string) (string,
 	}
 
 	// Deploy the service to Cloud Run
-	app, err := gcp.CloudRunService.Projects.Locations.Services.Create(parent, service).Do()
+	app, err := c.CloudRunService.Projects.Locations.Services.Create(parent, service).Do()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to deploy service to Cloud Run: %v", err)
 	}
@@ -120,8 +120,8 @@ func (gcp *Gcp) DeployCloudRunApp(serviceName, imageURL, region string) (string,
 	return app.Metadata.Uid, app.Status.Url, nil
 }
 
-// UploadFileToGCS uploads a local file to a specified GCP bucket
-func (gcp *Gcp) UploadFileToGCS(bucketName, objectName, filePath string) error {
+// UploadFileToGCS uploads a local file to a specified c bucket
+func (c *Gcp) UploadFileToGCS(bucketName, objectName, filePath string) error {
 
 	// Open the local file
 	file, err := os.Open(filePath)
@@ -131,7 +131,7 @@ func (gcp *Gcp) UploadFileToGCS(bucketName, objectName, filePath string) error {
 	defer file.Close()
 
 	// Create a writer for the bucket
-	wc := gcp.StorageService.Bucket(bucketName).Object(objectName).NewWriter(context.Background())
+	wc := c.StorageService.Bucket(bucketName).Object(objectName).NewWriter(context.Background())
 	defer func() {
 		if closeErr := wc.Close(); closeErr != nil {
 			err = fmt.Errorf("failed to close writer for bucket %s: %v", bucketName, closeErr)

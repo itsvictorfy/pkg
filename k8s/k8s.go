@@ -22,8 +22,8 @@ type KubeClient struct {
 }
 
 // CheckClusterConnectivity checks the connectivity to the cluster
-func (kube *KubeClient) CheckClusterConnectivity(env string) error { //V
-	_, err := kube.AppsV1().Deployments("kube-system").List(context.TODO(), metav1.ListOptions{})
+func (k *KubeClient) CheckClusterConnectivity(env string) error { //V
+	_, err := k.AppsV1().Deployments("kube-system").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("connectivity check failed: %v", err)
 	}
@@ -31,7 +31,7 @@ func (kube *KubeClient) CheckClusterConnectivity(env string) error { //V
 }
 
 // Initialze Kubernetes Client per Cluster
-func (kube *KubeClient) InitClient(env string) error { //V
+func (k *KubeClient) InitClient(env string) error { //V
 	var kubeconfigPath string
 	if runtime.GOOS == "windows" {
 		kubeconfigPath = filepath.Join(os.Getenv("USERPROFILE"), ".kube", "config")
@@ -42,11 +42,11 @@ func (kube *KubeClient) InitClient(env string) error { //V
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig file: %v", err)
 	}
-	kube.Clientset, err = kubernetes.NewForConfig(config)
+	k.Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		return fmt.Errorf("unable to create %s client from config: %v", env, err)
 	}
-	err = kube.CheckClusterConnectivity(env)
+	err = k.CheckClusterConnectivity(env)
 	if err != nil {
 		return fmt.Errorf("connection to %s cluster failed: %v", env, err)
 	}
@@ -54,9 +54,9 @@ func (kube *KubeClient) InitClient(env string) error { //V
 }
 
 // Creates a Job from a CronJob
-func (kube *KubeClient) TriggerJobFromCronJob(cronjobName, namespace string) (string, error) {
+func (k *KubeClient) TriggerJobFromCronJob(cronjobName, namespace string) (string, error) {
 	jobName := fmt.Sprintf("%s-api-trigger-%s", cronjobName, time.Now().Format("20060102150405"))
-	cronjob, err := kube.BatchV1().CronJobs(namespace).Get(context.TODO(), cronjobName, metav1.GetOptions{})
+	cronjob, err := k.BatchV1().CronJobs(namespace).Get(context.TODO(), cronjobName, metav1.GetOptions{})
 	if err != nil {
 		return cronjobName, fmt.Errorf("kube: unable to retrieve cronjob %v", err)
 	}
@@ -70,13 +70,13 @@ func (kube *KubeClient) TriggerJobFromCronJob(cronjobName, namespace string) (st
 			Template: podTemplateSpec,
 		},
 	}
-	_, err = kube.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
+	_, err = k.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		return cronjobName, fmt.Errorf("kube: unable to create job %v", err)
 	}
 	return jobName, nil
 }
-func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string, volumeNameP, mountPathP *string) error {
+func (k *KubeClient) CreateJob(jobName, namespace, image string, commands []string, envVars, labels map[string]string, volumeNameP, mountPathP *string) error {
 	var env []corev1.EnvVar
 	for key, value := range envVars {
 		env = append(env, corev1.EnvVar{
@@ -132,7 +132,7 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 	}
 
 	// Create the Job in the specified namespace
-	_, err := kube.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
+	_, err := k.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to create job %v", err)
 	}
@@ -141,14 +141,14 @@ func (kube *KubeClient) CreateJob(jobName, namespace, image string, commands []s
 }
 
 // ScaleDownDeployment scales down the deployment to 0 replicas
-func (kube *KubeClient) ScaleDownDeployment(name, namespace string) error {
-	deployment, err := kube.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+func (k *KubeClient) ScaleDownDeployment(name, namespace string) error {
+	deployment, err := k.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to retrieve deployment %v", err)
 	}
 	deployment.Spec.Replicas = new(int32)
 	*deployment.Spec.Replicas = 0
-	_, err = kube.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+	_, err = k.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to scale down deployment %v", err)
 	}
@@ -156,14 +156,14 @@ func (kube *KubeClient) ScaleDownDeployment(name, namespace string) error {
 }
 
 // ScaleUpDeployment scales up the deployment to the specified number of replicas
-func (kube *KubeClient) ScaleUpDeployment(name, namespace string, replicas int32) error {
-	deployment, err := kube.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+func (k *KubeClient) ScaleUpDeployment(name, namespace string, replicas int32) error {
+	deployment, err := k.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to retrieve deployment %v", err)
 	}
 	deployment.Spec.Replicas = new(int32)
 	*deployment.Spec.Replicas = replicas
-	_, err = kube.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+	_, err = k.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to scale up deployment %v", err)
 	}
@@ -171,15 +171,15 @@ func (kube *KubeClient) ScaleUpDeployment(name, namespace string, replicas int32
 }
 
 // ScaleDownDeploymentsInNamespace scales down all deployments in the namespace to 0 replicas
-func (kube *KubeClient) ScaleDownAllDeploymentsInNamespace(namespace string) error {
-	deployments, err := kube.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+func (k *KubeClient) ScaleDownAllDeploymentsInNamespace(namespace string) error {
+	deployments, err := k.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("error getting %v deployments: %v", namespace, err)
 	}
 	replicas := int32(0)
 	for _, d := range deployments.Items {
 		d.Spec.Replicas = &replicas
-		_, err := kube.AppsV1().Deployments(namespace).Update(context.TODO(), &d, metav1.UpdateOptions{})
+		_, err := k.AppsV1().Deployments(namespace).Update(context.TODO(), &d, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("error scaling down %s: %v", d.Name, err)
 		}
@@ -188,17 +188,17 @@ func (kube *KubeClient) ScaleDownAllDeploymentsInNamespace(namespace string) err
 }
 
 // RestartDeployment restarts the deployment by updating the annotations
-func (kube *KubeClient) RestartDeployment(deploymentName, namespace string) error {
+func (k *KubeClient) RestartDeployment(deploymentName, namespace string) error {
 	timestamp := time.Now().Format(time.RFC3339)
 	patchData := fmt.Sprintf(`{"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": "%s"}}}}}`, timestamp)
-	_, err := kube.AppsV1().Deployments(namespace).Patch(context.TODO(), deploymentName, types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{})
+	_, err := k.AppsV1().Deployments(namespace).Patch(context.TODO(), deploymentName, types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to patch deployment: %v", err)
 	}
 	return nil
 }
 
-func (kube *KubeClient) CreateConfigMap(name, namespace string, data map[string]string) error {
+func (k *KubeClient) CreateConfigMap(name, namespace string, data map[string]string) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -206,15 +206,15 @@ func (kube *KubeClient) CreateConfigMap(name, namespace string, data map[string]
 		},
 		Data: data,
 	}
-	_, err := kube.CoreV1().ConfigMaps(namespace).Create(context.TODO(), configMap, metav1.CreateOptions{})
+	_, err := k.CoreV1().ConfigMaps(namespace).Create(context.TODO(), configMap, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("kube: unable to create configmap %v", err)
 	}
 	return nil
 }
 
-func (kube *KubeClient) IsJobCompleted(jobName, namespace string) (bool, error) {
-	job, err := kube.BatchV1().Jobs(namespace).Get(context.TODO(), jobName, metav1.GetOptions{})
+func (k *KubeClient) IsJobCompleted(jobName, namespace string) (bool, error) {
+	job, err := k.BatchV1().Jobs(namespace).Get(context.TODO(), jobName, metav1.GetOptions{})
 	if err != nil {
 		return false, fmt.Errorf("kube: unable to retrieve job %v", err)
 	}
