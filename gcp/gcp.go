@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -110,7 +111,7 @@ func (gcp *Gcp) DeployCloudRunApp(serviceName, imageURL, region string) (string,
 	}
 
 	// Deploy the service to Cloud Run
-	app, err := gcp.CloudRunService.Namespaces.Services.Create(parent, service).Do()
+	app, err := gcp.CloudRunService.Projects.Locations.Services.Create(parent, service).Do()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to deploy service to Cloud Run: %v", err)
 	}
@@ -131,11 +132,15 @@ func (gcp *Gcp) UploadFileToGCS(bucketName, objectName, filePath string) error {
 
 	// Create a writer for the bucket
 	wc := gcp.StorageService.Bucket(bucketName).Object(objectName).NewWriter(context.Background())
-	defer wc.Close()
+	defer func() {
+		if closeErr := wc.Close(); closeErr != nil {
+			err = fmt.Errorf("failed to close writer for bucket %s: %v", bucketName, closeErr)
+		}
+	}()
 
 	// Copy the file content to the bucket
-	if _, err = wc.Write([]byte(filePath)); err != nil {
-		return fmt.Errorf("failed to write to bucket %s: %v", bucketName, err)
+	if _, err := io.Copy(wc, file); err != nil {
+		return fmt.Errorf("failed to write file to bucket %s: %v", bucketName, err)
 	}
 
 	fmt.Printf("File %s uploaded to bucket %s as object %s\n", filePath, bucketName, objectName)
