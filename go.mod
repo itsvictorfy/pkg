@@ -4,6 +4,7 @@ go 1.23.2
 
 require (
 	cloud.google.com/go/secretmanager v1.14.2
+	cloud.google.com/go/storage v1.49.0
 	cloud.google.com/go/storagetransfer v1.12.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v66 v66.0.0
@@ -25,7 +26,6 @@ require (
 	cloud.google.com/go/iam v1.2.2 // indirect
 	cloud.google.com/go/longrunning v0.6.2 // indirect
 	cloud.google.com/go/monitoring v1.21.2 // indirect
-	cloud.google.com/go/storage v1.49.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
