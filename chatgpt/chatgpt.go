@@ -2,6 +2,7 @@ package chatgpt
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/sashabaranov/go-openai"
@@ -17,7 +18,7 @@ func InitClient(apiKey string) (*ChatGPTClient, error) {
 }
 
 // SendChatGptRequest sends a request to ChatGPT with the given prompt and message
-func (c *ChatGPTClient) SendChatGptRequest(userPrompt, msg string) (string, error) {
+func (c *ChatGPTClient) SendChatGptRequest(userPrompt, msg, reasoningEffort string, jsonSchema *openai.ChatCompletionResponseFormat) (string, error) {
 	req := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
@@ -31,8 +32,10 @@ func (c *ChatGPTClient) SendChatGptRequest(userPrompt, msg string) (string, erro
 	resp, err := c.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:    openai.GPT4o,
-			Messages: req,
+			Model:           openai.O3Mini,
+			Messages:        req,
+			ReasoningEffort: reasoningEffort,
+			ResponseFormat:  jsonSchema,
 		},
 	)
 	if err != nil {
@@ -77,6 +80,17 @@ func InitChatGptHistory(globalPrompt string) []openai.ChatCompletionMessage {
 		{
 			Role:    openai.ChatMessageRoleSystem, // "system" role for global instructions
 			Content: globalPrompt,
+		},
+	}
+}
+func CreateChatResponseFormat(schema json.Marshaler, strict bool) *openai.ChatCompletionResponseFormat {
+	return &openai.ChatCompletionResponseFormat{
+		Type: "json_object", // Assuming this is the correct type
+		JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+			Name:        "my_schema",
+			Description: "Global JSON Schema",
+			Schema:      schema,
+			Strict:      strict,
 		},
 	}
 }
